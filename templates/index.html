@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>B站视频处理器 - Edge兼容版</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <style>
+        :root {
+            --primary: #0078d7;
+            --hover: #106ebe;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .container {
+            border: 1px solid #e6e6e6;
+            border-radius: 4px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .progress {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f3f3f3;
+            border-left: 4px solid var(--primary);
+        }
+
+        button {
+            padding: 8px 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 2px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: var(--hover);
+        }
+
+        input[type="text"] {
+            padding: 8px;
+            width: 300px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>B站视频处理器</h1>
+    <p>请选择包含视频片段的文件夹路径：</p>
+
+    <div>
+        <input type="text" id="directory" placeholder="输入文件夹绝对路径">
+        <button id="processBtn">开始处理</button>
+    </div>
+
+    <div id="progress" class="progress">准备就绪...</div>
+
+    <div id="result" style="display:none;">
+        <h3>处理完成！</h3>
+        <p id="resultText"></p>
+    </div>
+</div>
+
+<script>
+    document.getElementById('processBtn').addEventListener('click', function () {
+        const dir = document.getElementById('directory').value.trim();
+        if (!dir) return alert('请输入有效路径');
+
+        fetch('/process', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `directory=${encodeURIComponent(dir)}`
+        }).then(checkProgress);
+    });
+
+    function checkProgress() {
+        fetch('/progress')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('progress').textContent = data.message;
+
+                if (data.status === 'processing') {
+                    setTimeout(checkProgress, 1000);
+                } else if (data.status === 'completed') {
+                    document.getElementById('result').style.display = 'block';
+                    document.getElementById('resultText').textContent = data.message;
+                } else if (data.status === 'error') {
+                    alert(data.message);
+                }
+            });
+    }
+</script>
+</body>
+</html>
