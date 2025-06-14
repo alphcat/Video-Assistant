@@ -1,103 +1,102 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-    <title>B站视频处理器 - Edge兼容版</title>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="UTF-8">
+    <title>bilibili视频助手</title>
     <style>
-        :root {
-            --primary: #0078d7;
-            --hover: #106ebe;
-        }
-
         body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            max-width: 800px;
+            font-family: Arial, sans-serif;
+            max-width: 600px;
             margin: 0 auto;
             padding: 20px;
         }
 
-        .container {
-            border: 1px solid #e6e6e6;
-            border-radius: 4px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-        }
-
-        .progress {
+        h1 {
+            text-align: center;
             margin: 20px 0;
-            padding: 15px;
-            background: #f3f3f3;
-            border-left: 4px solid var(--primary);
         }
 
-        button {
-            padding: 8px 16px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 2px;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background: var(--hover);
+        form {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
         }
 
         input[type="text"] {
+            width: 70%;
             padding: 8px;
-            width: 300px;
-            border: 1px solid #ddd;
+            margin-right: 10px;
+        }
+
+        button {
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .error {
+            color: red;
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <h1>B站视频处理器</h1>
-    <p>请选择包含视频片段的文件夹路径：</p>
+<h1>bilibili视频助手</h1>
 
-    <div>
-        <input type="text" id="directory" placeholder="输入文件夹绝对路径">
-        <button id="processBtn">开始处理</button>
-    </div>
+<form id="videoForm" method="POST" style="display: flex; align-items: center; gap: 10px;">
+    <label for="input_field">请输入视频链接：</label>
+    <input type="text"
+           id="input_field"
+           name="user_input"
+           required
+           style="flex: 1;">
+    <button type="submit">视频预览</button>
+</form>
 
-    <div id="progress" class="progress">准备就绪...</div>
-
-    <div id="result" style="display:none;">
-        <h3>处理完成！</h3>
-        <p id="resultText"></p>
-    </div>
-</div>
+<div id="videoContainer" class="video-container"></div>
+<div id="errorMsg" class="error"></div>
 
 <script>
-    document.getElementById('processBtn').addEventListener('click', function () {
-        const dir = document.getElementById('directory').value.trim();
-        if (!dir) return alert('请输入有效路径');
+    document.getElementById('videoForm').addEventListener('submit', async (e) => {
+        e.preventDefault();  // 防止页面刷新
+        const url = document.getElementById('input_field').value;  // 直接获取用户输入
+        const container = document.getElementById('videoContainer');
+        const errorBox = document.getElementById('errorMsg');
 
-        fetch('/process', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: `directory=${encodeURIComponent(dir)}`
-        }).then(checkProgress);
-    });
-
-    function checkProgress() {
-        fetch('/progress')
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('progress').textContent = data.message;
-
-                if (data.status === 'processing') {
-                    setTimeout(checkProgress, 1000);
-                } else if (data.status === 'completed') {
-                    document.getElementById('result').style.display = 'block';
-                    document.getElementById('resultText').textContent = data.message;
-                } else if (data.status === 'error') {
-                    alert(data.message);
-                }
+        try {
+            const res = await fetch('/api/get_video', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({url})  // ✅ 只传 URL
             });
-    }
+            const data = await res.json();
+
+            if (res.ok) {
+                errorBox.innerText = '';
+                container.innerHTML = `
+                    <h3>${data.title}</h3>
+                    <video controls width="100%" src="${data.video_url}"></video>
+                `;
+            } else {
+                errorBox.innerText = data.error || '请求失败';
+                container.innerHTML = '';
+            }
+        } catch (err) {
+            errorBox.innerText = '请求出错，请检查网络或控制台';
+            console.error('Error:', err);
+        }
+    });
 </script>
 </body>
 </html>
