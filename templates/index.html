@@ -6,7 +6,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 600px;
+            max-width: 800px;
             margin: 0 auto;
             padding: 20px;
         }
@@ -23,10 +23,42 @@
             border-radius: 5px;
         }
 
+        .input-group {
+            margin-bottom: 15px;
+        }
+
         input[type="text"] {
-            width: 70%;
+            width: 100%;
             padding: 8px;
-            margin-right: 10px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+
+        .time-inputs {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .time-input-group {
+            flex: 1;
+        }
+
+        .time-input-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .time-input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        .time-format-hint {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
         }
 
         button {
@@ -36,6 +68,11 @@
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: #45a049;
         }
 
         .result {
@@ -49,52 +86,450 @@
             color: red;
             margin-top: 10px;
         }
+
+        .video-container {
+            margin-top: 20px;
+        }
+
+        .video-container video {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            display: block;
+        }
+
+        .preview-container {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .preview-container h3 {
+            margin-top: 0;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .loading::after {
+            content: "加载中...";
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: "加载中."; }
+            40% { content: "加载中.."; }
+            60% { content: "加载中..."; }
+            80%, 100% { content: "加载中...."; }
+        }
+
+        .preview-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .preview-controls button {
+            width: auto;
+        }
+
+        .preview-controls button.secondary {
+            background-color: #6c757d;
+        }
+
+        .preview-controls button.secondary:hover {
+            background-color: #5a6268;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .action-buttons button {
+            flex: 1;
+        }
+
+        .action-buttons button.finish {
+            background-color: #dc3545;
+        }
+
+        .action-buttons button.finish:hover {
+            background-color: #c82333;
+        }
+
+        .segment-list {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .segment-list h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .segment-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .segment-item:last-child {
+            border-bottom: none;
+        }
+
+        .segment-info {
+            flex: 1;
+        }
+
+        .segment-time {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background-color: #f0f0f0;
+            border-radius: 2px;
+            margin: 10px 0;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background-color: #4CAF50;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .status-message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .status-message.info {
+            background-color: #e3f2fd;
+            color: #0d47a1;
+        }
+
+        .status-message.success {
+            background-color: #e8f5e9;
+            color: #1b5e20;
+        }
+
+        .status-message.error {
+            background-color: #ffebee;
+            color: #b71c1c;
+        }
+
+        .reset-button {
+            background-color: #6c757d;
+            margin-top: 10px;
+        }
+
+        .reset-button:hover {
+            background-color: #5a6268;
+        }
     </style>
 </head>
 <body>
 <h1>bilibili视频助手</h1>
 
-<form id="videoForm" method="POST" style="display: flex; align-items: center; gap: 10px;">
-    <label for="input_field">请输入视频链接：</label>
-    <input type="text"
-           id="input_field"
-           name="user_input"
-           required
-           style="flex: 1;">
-    <button type="submit">视频预览</button>
+<form id="videoForm" method="POST">
+    <div class="input-group">
+        <label for="input_field">请输入视频链接：</label>
+        <input type="text"
+               id="input_field"
+               name="user_input"
+               required
+               value="{{ input_data.url if input_data else '' }}">
+    </div>
+
+    <div class="time-inputs">
+        <div class="time-input-group">
+            <label>开始时间：</label>
+            <input type="text" 
+                   name="start_time" 
+                   class="time-input" 
+                   placeholder="00:00:00"
+                   pattern="^([0-9]{1,2}:)?[0-9]{1,2}:[0-9]{1,2}$"
+                   value="{{ input_data.start if input_data else '' }}">
+            <div class="time-format-hint">格式：时:分:秒 或 分:秒</div>
+        </div>
+        <div class="time-input-group">
+            <label>结束时间：</label>
+            <input type="text" 
+                   name="end_time" 
+                   class="time-input" 
+                   placeholder="00:00:00"
+                   pattern="^([0-9]{1,2}:)?[0-9]{1,2}:[0-9]{1,2}$"
+                   value="{{ input_data.end if input_data else '' }}">
+            <div class="time-format-hint">格式：时:分:秒 或 分:秒</div>
+        </div>
+    </div>
+    
+    <div class="action-buttons">
+        <button type="button" id="previewBtn">预览视频</button>
+        <button type="submit">下载片段</button>
+        <button type="button" id="finishBtn" class="finish">完成下载</button>
+    </div>
 </form>
 
+<div id="progressBar" class="progress-bar">
+    <div class="progress-bar-fill"></div>
+</div>
+
+<div id="statusMessage" class="status-message"></div>
+<div id="loading" class="loading"></div>
+<div id="previewContainer" class="preview-container"></div>
+<div id="segmentList" class="segment-list"></div>
 <div id="videoContainer" class="video-container"></div>
 <div id="errorMsg" class="error"></div>
+<div id="result"></div>
+
+<button type="button" id="resetBtn" class="reset-button">重置</button>
 
 <script>
-    document.getElementById('videoForm').addEventListener('submit', async (e) => {
-        e.preventDefault();  // 防止页面刷新
-        const url = document.getElementById('input_field').value;  // 直接获取用户输入
-        const container = document.getElementById('videoContainer');
-        const errorBox = document.getElementById('errorMsg');
+    const loading = document.getElementById('loading');
+    const previewContainer = document.getElementById('previewContainer');
+    const videoContainer = document.getElementById('videoContainer');
+    const errorBox = document.getElementById('errorMsg');
+    const previewBtn = document.getElementById('previewBtn');
+    const finishBtn = document.getElementById('finishBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const form = document.getElementById('videoForm');
+    const segmentList = document.getElementById('segmentList');
+    const progressBar = document.getElementById('progressBar');
+    const progressBarFill = progressBar.querySelector('.progress-bar-fill');
+    const statusMessage = document.getElementById('statusMessage');
+    let currentVideoTitle = '';
+
+    // 显示状态消息
+    function showStatus(message, type = 'info') {
+        statusMessage.textContent = message;
+        statusMessage.className = `status-message ${type}`;
+        statusMessage.style.display = 'block';
+        setTimeout(() => {
+            statusMessage.style.display = 'none';
+        }, 3000);
+    }
+
+    // 重置所有状态
+    function resetState() {
+        currentVideoTitle = '';
+        previewContainer.innerHTML = '';
+        videoContainer.innerHTML = '';
+        segmentList.innerHTML = '';
+        errorBox.innerText = '';
+        document.getElementById('input_field').value = '';
+        document.querySelector('input[name="start_time"]').value = '';
+        document.querySelector('input[name="end_time"]').value = '';
+        showStatus('已重置', 'success');
+    }
+
+    // 将时间字符串转换为秒数
+    function timeToSeconds(timeStr) {
+        if (!timeStr) return null;
+        
+        const parts = timeStr.split(':').map(Number);
+        if (parts.length === 2) {
+            // 分:秒 格式
+            return parts[0] * 60 + parts[1];
+        } else if (parts.length === 3) {
+            // 时:分:秒 格式
+            return parts[0] * 3600 + parts[1] * 60 + parts[2];
+        }
+        return null;
+    }
+
+    // 将秒数转换为时间字符串
+    function secondsToTime(seconds) {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = Math.floor(seconds % 60);
+        
+        if (hours > 0) {
+            return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        return `${minutes}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    // 更新片段列表
+    function updateSegmentList(segments) {
+        if (!segments || segments.length === 0) {
+            segmentList.innerHTML = '';
+            return;
+        }
+
+        const html = `
+            <h3>已下载片段</h3>
+            ${segments.map(segment => `
+                <div class="segment-item">
+                    <div class="segment-info">
+                        <div>${segment.title}</div>
+                        <div class="segment-time">${secondsToTime(segment.start)} - ${secondsToTime(segment.end)}</div>
+                    </div>
+                    <video controls width="200" src="${segment.url}"></video>
+                </div>
+            `).join('')}
+        `;
+        segmentList.innerHTML = html;
+    }
+
+    // 预览视频
+    previewBtn.addEventListener('click', async () => {
+        const url = document.getElementById('input_field').value;
+        if (!url) {
+            errorBox.innerText = '请输入视频链接';
+            return;
+        }
+
+        loading.style.display = 'block';
+        previewContainer.innerHTML = '';
+        errorBox.innerText = '';
+        showStatus('正在加载视频...', 'info');
+
+        try {
+            const res = await fetch('/api/preview_video', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ url })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                currentVideoTitle = data.title;
+                previewContainer.innerHTML = `
+                    <h3>${data.title}</h3>
+                    <video controls src="${data.video_url}"></video>
+                `;
+                showStatus('视频加载完成', 'success');
+                
+                // 获取当前视频的片段列表
+                const segmentsRes = await fetch('/api/get_segments', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ title: data.title })
+                });
+                const segmentsData = await segmentsRes.json();
+                if (segmentsRes.ok) {
+                    updateSegmentList(segmentsData.segments);
+                }
+            } else {
+                errorBox.innerText = data.error || '预览失败';
+                showStatus(data.error || '预览失败', 'error');
+            }
+        } catch (err) {
+            errorBox.innerText = '请求出错，请检查网络或控制台';
+            showStatus('请求出错，请检查网络或控制台', 'error');
+            console.error('Error:', err);
+        } finally {
+            loading.style.display = 'none';
+        }
+    });
+
+    // 完成下载
+    finishBtn.addEventListener('click', async () => {
+        if (!currentVideoTitle) {
+            errorBox.innerText = '请先预览视频';
+            return;
+        }
+
+        loading.style.display = 'block';
+        errorBox.innerText = '';
+        showStatus('正在处理...', 'info');
+
+        try {
+            const res = await fetch('/api/finish_download', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ title: currentVideoTitle })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                showStatus('完成当前下载，点击重置继续下载', 'success');
+                currentVideoTitle = '';
+                previewContainer.innerHTML = '';
+            } else {
+                errorBox.innerText = data.error || '操作失败';
+                showStatus(data.error || '操作失败', 'error');
+            }
+        } catch (err) {
+            errorBox.innerText = '请求出错，请检查网络或控制台';
+            showStatus('请求出错，请检查网络或控制台', 'error');
+            console.error('Error:', err);
+        } finally {
+            loading.style.display = 'none';
+        }
+    });
+
+    // 重置按钮
+    resetBtn.addEventListener('click', resetState);
+
+    // 下载视频
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const url = document.getElementById('input_field').value;
+        const formData = new FormData(e.target);
+        const startTime = formData.get('start_time');
+        const endTime = formData.get('end_time');
+
+        // 转换时间为秒数
+        const start = timeToSeconds(startTime);
+        const end = timeToSeconds(endTime);
+
+        loading.style.display = 'block';
+        progressBar.style.display = 'block';
+        videoContainer.innerHTML = '';
+        errorBox.innerText = '';
+        showStatus('正在处理视频片段...', 'info');
 
         try {
             const res = await fetch('/api/get_video', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({url})  // ✅ 只传 URL
+                body: JSON.stringify({
+                    url,
+                    start: start,
+                    end: end
+                })
             });
             const data = await res.json();
 
             if (res.ok) {
-                errorBox.innerText = '';
-                container.innerHTML = `
+                videoContainer.innerHTML = `
                     <h3>${data.title}</h3>
-                    <video controls width="100%" src="${data.video_url}"></video>
+                    <video controls src="${data.video_url}"></video>
                 `;
+                showStatus('片段下载完成', 'success');
+                // 更新片段列表
+                if (data.segments) {
+                    updateSegmentList(data.segments);
+                }
             } else {
-                errorBox.innerText = data.error || '请求失败';
-                container.innerHTML = '';
+                errorBox.innerText = data.error || '下载失败';
+                showStatus(data.error || '下载失败', 'error');
             }
         } catch (err) {
             errorBox.innerText = '请求出错，请检查网络或控制台';
+            showStatus('请求出错，请检查网络或控制台', 'error');
             console.error('Error:', err);
+        } finally {
+            loading.style.display = 'none';
+            progressBar.style.display = 'none';
         }
     });
 </script>
